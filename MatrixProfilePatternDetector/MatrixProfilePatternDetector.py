@@ -7,8 +7,11 @@ import pickle
 #from MatrixProfilePatternDetector import MatrixProfilePatternDetector as mppd
 from scipy import signal
 from matrixprofile import *
-
-
+import seaborn as sns
+import scipy as scipy
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib import pyplot, transforms
+from scipy import ndimage
 
 def butt_filter(T, order, freq, btype = "low"): #Butterworth filter
     """ 
@@ -26,18 +29,68 @@ def butt_filter(T, order, freq, btype = "low"): #Butterworth filter
 
 
 data = pd.read_csv("gas_turbine.csv")
-t1 = data['AP'].values
+t1 = data['PE'].values
 
-
+matrix_pofile = pd.DataFrame()
 ft1 = t1 - butt_filter(t1, order = 5, freq = 3500, btype = 'low')
 
 
 print("Length of timeseries -", len(ft1))
 
-pattern = ft1[:500]
+pattern = ft1[:200]
+x = []
+for point in range(len(pattern)):
+    x.append(point)
+
 m = 10
 print('Start')
-mp = matrixProfile.stomp(pattern,m)
+#mp = matrixProfile.stomp(pattern,m)
+
+for i in range(len(pattern)-m+1):
+    query = pattern[i:(i+m)]
+    distanceProfile = []
+    for j in range(len(pattern)-m+1):
+        
+        distanceProfile.append(scipy.spatial.distance.euclidean(query,pattern[j:(j+m)]))
+
+    dp = np.array(distanceProfile)
+   
+    
+    
+    matrix_pofile = pd.concat([matrix_pofile,pd.DataFrame(dp)], axis=1)
+
+
+
+
+
+
+
+
+
+
+
+mp_t = pd.DataFrame(np.transpose(matrix_pofile))
+
+mp_t.to_csv('matrix_profile.csv')
+
+fig, axScatter = plt.subplots(figsize=(5.5, 5.5))
+axScatter = sns.heatmap(mp_t, cmap="YlGnBu",xticklabels = 10, yticklabels=10, square=True)
+divider = make_axes_locatable(axScatter)
+axHistx = divider.append_axes("top", 1.2, pad=0.1, sharex=axScatter)
+axHisty = divider.append_axes("left", 1.2, pad=0.1, sharey=axScatter)
+axHistx.plot(x, pattern)
+axHisty.plot(pattern, x)
+
+plt.show()
+
+
+
+
+
+
+
+
+print(len(dp[0]))
 
 
 def plot_motifs(mtfs, labels, ax):
@@ -57,7 +110,8 @@ def plot_motifs(mtfs, labels, ax):
     ax.plot(pattern, 'k', linewidth=1, label="data")
     ax.legend()
 
-mtfs ,motif_d  = motifs.motifs(pattern, mp, max_motifs=5)
+
+mtfs ,motif_d  = motifs.motifs(pattern, mp, max_motifs=10)
 #Append np.nan to Matrix profile to enable plotting against raw data
 mp_adj = np.append(mp[0],np.zeros(m-1)+np.nan)
 
