@@ -71,7 +71,19 @@ for i in range(len(pattern)-m+1):
 
 mp_t = pd.DataFrame(np.transpose(matrix_pofile))
 
-mp_t.to_csv('matrix_profile.csv')
+print(scipy.spatial.distance.euclidean(mp_t.iloc[0,:].values,mp_t.iloc[2,:].values))
+
+
+
+
+
+
+
+
+
+
+
+
 
 fig, axScatter = plt.subplots(figsize=(5.5, 5.5))
 axScatter = sns.heatmap(mp_t, cmap="YlGnBu",xticklabels = 10, yticklabels=10, square=True)
@@ -84,8 +96,20 @@ axHisty.plot(pattern, x)
 plt.show()
 
 
+matrix_of_dist = pd.DataFrame()
+dist_of_dist=[]
+for i in range(len(pattern)-m+1):
+    dist_of_dist=[]
+    for j in range(len(pattern)-m+1):
+         dist_of_dist.append(scipy.spatial.distance.euclidean(mp_t.iloc[i,:].values,mp_t.iloc[j,:].values))
+    dp = np.array(dist_of_dist)
+    matrix_of_dist = pd.concat([matrix_of_dist,pd.DataFrame(dp)], axis=1)
 
+matrix_of_dist_t =  pd.DataFrame(np.transpose(matrix_of_dist))
+sns.heatmap(matrix_of_dist_t, cmap="YlGnBu",xticklabels = 10, yticklabels=10, square=True)
 
+    
+plt.show()
 
 
 
