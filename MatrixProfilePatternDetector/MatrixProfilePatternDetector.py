@@ -44,7 +44,7 @@ for point in range(len(pattern)):
 
 m = 10
 print('Start')
-#mp = matrixProfile.stomp(pattern,m)
+
 
 for i in range(len(pattern)-m+1):
     query = pattern[i:(i+m)]
@@ -71,29 +71,8 @@ for i in range(len(pattern)-m+1):
 
 mp_t = pd.DataFrame(np.transpose(matrix_pofile))
 
-print(scipy.spatial.distance.euclidean(mp_t.iloc[0,:].values,mp_t.iloc[2,:].values))
 
 
-
-
-
-
-
-
-
-
-
-
-
-fig, axScatter = plt.subplots(figsize=(5.5, 5.5))
-axScatter = sns.heatmap(mp_t, cmap="YlGnBu",xticklabels = 10, yticklabels=10, square=True)
-divider = make_axes_locatable(axScatter)
-axHistx = divider.append_axes("top", 1.2, pad=0.1, sharex=axScatter)
-axHisty = divider.append_axes("left", 1.2, pad=0.1, sharey=axScatter)
-axHistx.plot(x, pattern)
-axHisty.plot(pattern, x)
-
-plt.show()
 
 
 matrix_of_dist = pd.DataFrame()
@@ -110,6 +89,44 @@ sns.heatmap(matrix_of_dist_t, cmap="YlGnBu",xticklabels = 10, yticklabels=10, sq
 
     
 plt.show()
+
+
+index_of_common = np.where((matrix_of_dist_t.values < 30) & (matrix_of_dist_t.values != 0))
+starts_y = index_of_common[0]
+
+starts_x = index_of_common[1]
+fig, axScatter = plt.subplots(figsize=(5.5, 5.5))
+axScatter = sns.heatmap(mp_t, cmap="YlGnBu",xticklabels = 10, yticklabels=10, square=True)
+divider = make_axes_locatable(axScatter)
+axHistx = divider.append_axes("top", 1.2, pad=0.1, sharex=axScatter)
+axHisty = divider.append_axes("left", 1.2, pad=0.1, sharey=axScatter)
+axHistx.plot(x, pattern)
+axHisty.plot(pattern, x)
+colors = 'rgbcm'
+c = []
+i = 0
+prev = -1
+for e in starts_y:
+    if e == prev:
+        c.append(colors[i % len(colors)])
+    else:
+        i += 1
+        c.append(colors[i % len(colors)])
+
+
+for j in range(len(starts_y)):
+    col = c[j]
+    e = starts_y[j]
+    ex = starts_x[j]
+    axHistx.plot(x[e:e+m], pattern[e:e+m],c=col)
+    axHistx.plot(x[ex:ex+m], pattern[ex:ex+m],c=col)
+        
+    
+
+   
+ 
+plt.show()
+
 
 
 
