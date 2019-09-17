@@ -12,6 +12,8 @@ import scipy as scipy
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import pyplot, transforms
 from scipy import ndimage
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.cluster import KMeans
 
 def butt_filter(T, order, freq, btype = "low"): #Butterworth filter
     """ 
@@ -27,9 +29,28 @@ def butt_filter(T, order, freq, btype = "low"): #Butterworth filter
     output = signal.filtfilt(b, a, T)
     return output
 
+def plot_motifs(mtfs, labels, ax):
 
+    colori = 0
+    colors = 'rgbcm'
+    for ms,l in zip(mtfs,labels):
+        c =colors[colori % len(colors)]
+        starts = list(ms)
+        ends = [min(s + m,len(pattern)-1) for s in starts]
+        ax.plot(starts, pattern[starts],  c +'o',  label=l)
+        ax.plot(ends, pattern[ends],  c +'o', markerfacecolor='none')
+        for nn in ms:
+            ax.plot(range(nn,nn+m),pattern[nn:nn+m], c , linewidth=2)
+        colori += 1
+
+    ax.plot(pattern, 'k', linewidth=1, label="data")
+  
+
+
+
+scaler = MinMaxScaler()
 data = pd.read_csv("gas_turbine.csv")
-t1 = data['PE'].values
+t1 = data['AP'].values
 
 matrix_pofile = pd.DataFrame()
 ft1 = t1 - butt_filter(t1, order = 5, freq = 3500, btype = 'low')
@@ -37,7 +58,7 @@ ft1 = t1 - butt_filter(t1, order = 5, freq = 3500, btype = 'low')
 
 print("Length of timeseries -", len(ft1))
 
-pattern = ft1[:200]
+pattern = ft1[:250]
 x = []
 for point in range(len(pattern)):
     x.append(point)
@@ -70,7 +91,13 @@ for i in range(len(pattern)-m+1):
 
 
 mp_t = pd.DataFrame(np.transpose(matrix_pofile))
-
+mp_t = pd.DataFrame(scaler.fit_transform(mp_t))
+tuples = tuple(mp_t.values[0:])
+one_tuple = tuple(tuples)
+print(one_tuple[0])
+kmeans = KMeans(n_clusters=5, random_state=0)
+mp = matrixProfile.stomp(pattern,m)
+mtfs ,motif_d  = motifs.motifs(pattern, tuples, max_motifs=10)
 
 
 
@@ -80,7 +107,8 @@ dist_of_dist=[]
 for i in range(len(pattern)-m+1):
     dist_of_dist=[]
     for j in range(len(pattern)-m+1):
-         dist_of_dist.append(scipy.spatial.distance.euclidean(mp_t.iloc[i,:].values,mp_t.iloc[j,:].values))
+         diff = abs(mp_t.iloc[i,:].values - mp_t.iloc[j,:].values)
+         dist_of_dist.append(sum(diff)/(len(pattern)-m))
     dp = np.array(dist_of_dist)
     matrix_of_dist = pd.concat([matrix_of_dist,pd.DataFrame(dp)], axis=1)
 
@@ -91,17 +119,37 @@ sns.heatmap(matrix_of_dist_t, cmap="YlGnBu",xticklabels = 10, yticklabels=10, sq
 plt.show()
 
 
-index_of_common = np.where((matrix_of_dist_t.values < 30) & (matrix_of_dist_t.values != 0))
+index_of_common = np.where((matrix_of_dist_t.values < 0.08) & (matrix_of_dist_t.values != 0))
 starts_y = index_of_common[0]
+print(starts_y)
+#starts_x = index_of_common[1]
+#print(starts_x)
+#kmeans.fit(mp_t)
+#labels = kmeans.labels_
+#print(len(labels))
 
-starts_x = index_of_common[1]
+#new_matrix = matrix_of_dist_t.values
+
+
+
 fig, axScatter = plt.subplots(figsize=(5.5, 5.5))
 axScatter = sns.heatmap(mp_t, cmap="YlGnBu",xticklabels = 10, yticklabels=10, square=True)
 divider = make_axes_locatable(axScatter)
 axHistx = divider.append_axes("top", 1.2, pad=0.1, sharex=axScatter)
 axHisty = divider.append_axes("left", 1.2, pad=0.1, sharey=axScatter)
 axHistx.plot(x, pattern)
-axHisty.plot(pattern, x)
+axHisty.plot(-1*pattern, x)
+print(mtfs)
+plot_motifs(mtfs, [f"{md:.3f}" for md in motif_d], axHistx)
+#ax3.set_ylabel('Motifs', size=22)
+#colors = 'rgbcmk'
+#for i in range(len(pattern)-m+1):
+ #   axHistx.plot(x[i:i+m], pattern[i:i+m],c=colors[labels[i]])
+
+plt.show()
+
+
+
 colors = 'rgbcm'
 c = []
 i = 0
@@ -117,9 +165,9 @@ for e in starts_y:
 for j in range(len(starts_y)):
     col = c[j]
     e = starts_y[j]
-    ex = starts_x[j]
-    axHistx.plot(x[e:e+m], pattern[e:e+m],c=col)
-    axHistx.plot(x[ex:ex+m], pattern[ex:ex+m],c=col)
+    #ex = starts_x[j]
+    axHistx.plot(x[e:e+m], pattern[e:e+m],c='r')
+    #axHistx.plot(x[ex:ex+m], pattern[ex:ex+m],c=col)
         
     
 
